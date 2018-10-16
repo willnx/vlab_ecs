@@ -1,0 +1,31 @@
+version: '3'
+services:
+  ecs-api:
+    ports:
+      - "5000:5000"
+    image:
+      willnx/vlab-ecs-api
+    environment:
+      - VLAB_URL=https://localhost
+      - INF_VCENTER_SERVER=virtlab.igs.corp
+      - INF_VCENTER_USER=Administrator@vsphere.local
+      - INF_VCENTER_PASSWORD=1.Password
+    volumes:
+      - ./vlab_ecs_api:/usr/lib/python3.6/site-packages/vlab_ecs_api
+    command: ["python3", "app.py"]
+
+  ecs-worker:
+    image:
+      willnx/vlab-ecs-worker
+    volumes:
+      - ./vlab_ecs_api:/usr/lib/python3.6/site-packages/vlab_ecs_api
+      - /mnt/raid/images/ecs:/images:ro
+    environment:
+      - INF_VCENTER_SERVER=ChangeME
+      - INF_VCENTER_USER=ChangeME
+      - INF_VCENTER_PASSWORD=ChangeME
+      - INF_VCENTER_TOP_LVL_DIR=/vlab
+
+  ecs-broker:
+    image:
+      rabbitmq:3.7-alpine
