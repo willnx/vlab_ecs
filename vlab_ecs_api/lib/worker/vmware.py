@@ -16,15 +16,13 @@ def show_ecs(username):
     :param username: The user requesting info about their Ecs
     :type username: String
     """
-    info = {}
+    ecs_vms = {}
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
         folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
-        ecs_vms = {}
         for vm in folder.childEntity:
             info = virtual_machine.get_info(vcenter, vm)
-            kind, version = info['note'].split('=')
-            if kind == 'Ecs':
+            if info['component'] == 'Ecs':
                 ecs_vms[vm.name] = info
     return ecs_vms
 
@@ -49,8 +47,7 @@ def delete_ecs(username, machine_name, logger):
         for entity in folder.childEntity:
             if entity.name == machine_name:
                 info = virtual_machine.get_info(vcenter, entity)
-                kind, version = info['note'].split('=')
-                if kind == 'Ecs':
+                if info['component'] == 'Ecs':
                     logger.debug('powering off VM')
                     virtual_machine.power(entity, state='off')
                     delete_task = entity.Destroy_Task()
@@ -101,11 +98,15 @@ def create_ecs(username, machine_name, image, network, logger):
                                                      username, machine_name, logger)
         finally:
             ova.close()
-        spec = vim.vm.ConfigSpec()
-        spec.annotation = 'Ecs={}'.format(image)
-        task = the_vm.ReconfigVM_Task(spec)
-        consume_task(task)
-        return virtual_machine.get_info(vcenter, the_vm)
+        meta_data = {'component' : "Ecs",
+                     'created': time.time(),
+                     'version': image,
+                     'configured': False,
+                     'generation': 1,
+                    }
+        virtual_machine.set_meta(the_vm, meta_data)
+        info = virtual_machine.get_info(vcenter, the_vm)
+        return {the_vm.name: info}
 
 
 def list_images():
