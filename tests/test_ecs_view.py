@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 import ujson
 from flask import Flask
 from vlab_api_common import flask_common
-from vlab_api_common.http_auth import generate_test_token
+from vlab_api_common.http_auth import generate_v2_test_token
 
 
 from vlab_ecs_api.lib.views import ecs
@@ -19,7 +19,7 @@ class TestEcsView(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Runs once for the whole test suite"""
-        cls.token = generate_test_token(username='bob')
+        cls.token = generate_v2_test_token(username='bob')
 
     @classmethod
     def setUp(cls):

@@ -3,14 +3,9 @@
 import time
 import random
 import os.path
-from celery.utils.log import get_task_logger
 from vlab_inf_common.vmware import vCenter, Ova, vim, virtual_machine, consume_task
 
 from vlab_ecs_api.lib import const
-
-
-logger = get_task_logger(__name__)
-logger.setLevel(const.VLAB_ECS_LOG_LEVEL.upper())
 
 
 def show_ecs(username):
@@ -21,20 +16,18 @@ def show_ecs(username):
     :param username: The user requesting info about their Ecs
     :type username: String
     """
-    info = {}
+    ecs_vms = {}
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
         folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
-        ecs_vms = {}
         for vm in folder.childEntity:
             info = virtual_machine.get_info(vcenter, vm)
-            kind, version = info['note'].split('=')
-            if kind == 'Ecs':
+            if info['component'] == 'Ecs':
                 ecs_vms[vm.name] = info
     return ecs_vms
 
 
-def delete_ecs(username, machine_name):
+def delete_ecs(username, machine_name, logger):
     """Unregister and destroy a user's Ecs
 
     :Returns: None
@@ -44,6 +37,9 @@ def delete_ecs(username, machine_name):
 
     :param machine_name: The name of the VM to delete
     :type machine_name: String
+
+    :param logger: An object for logging messages
+    :type logger: logging.LoggerAdapter
     """
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
@@ -51,8 +47,7 @@ def delete_ecs(username, machine_name):
         for entity in folder.childEntity:
             if entity.name == machine_name:
                 info = virtual_machine.get_info(vcenter, entity)
-                kind, version = info['note'].split('=')
-                if kind == 'Ecs':
+                if info['component'] == 'Ecs':
                     logger.debug('powering off VM')
                     virtual_machine.power(entity, state='off')
                     delete_task = entity.Destroy_Task()
@@ -63,7 +58,7 @@ def delete_ecs(username, machine_name):
             raise ValueError('No {} named {} found'.format('ecs', machine_name))
 
 
-def create_ecs(username, machine_name, image, network):
+def create_ecs(username, machine_name, image, network, logger):
     """Deploy a new instance of Ecs
 
     :Returns: Dictionary
@@ -79,12 +74,19 @@ def create_ecs(username, machine_name, image, network):
 
     :param network: The name of the network to connect the new Ecs instance up to
     :type network: String
+
+    :param logger: An object for logging messages
+    :type logger: logging.LoggerAdapter
     """
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER,
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
         image_name = convert_name(image)
         logger.info(image_name)
-        ova = Ova(os.path.join(const.VLAB_ECS_IMAGES_DIR, image_name))
+        try:
+            ova = Ova(os.path.join(const.VLAB_ECS_IMAGES_DIR, image_name))
+        except FileNotFoundError:
+            error = 'Invalid version of ECS supplied: {}'.format(image)
+            raise ValueError(error)
         try:
             network_map = vim.OvfManager.NetworkMapping()
             network_map.name = ova.networks[0]
@@ -96,11 +98,15 @@ def create_ecs(username, machine_name, image, network):
                                                      username, machine_name, logger)
         finally:
             ova.close()
-        spec = vim.vm.ConfigSpec()
-        spec.annotation = 'Ecs={}'.format(image)
-        task = the_vm.ReconfigVM_Task(spec)
-        consume_task(task)
-        return virtual_machine.get_info(vcenter, the_vm)
+        meta_data = {'component' : "Ecs",
+                     'created': time.time(),
+                     'version': image,
+                     'configured': False,
+                     'generation': 1,
+                    }
+        virtual_machine.set_meta(the_vm, meta_data)
+        info = virtual_machine.get_info(vcenter, the_vm)
+        return {the_vm.name: info}
 
 
 def list_images():
