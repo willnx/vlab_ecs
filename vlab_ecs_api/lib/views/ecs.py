@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 """
-TODO
+Defines the RESTful API for the ECS service
 """
 import ujson
 from flask import current_app
@@ -17,7 +17,7 @@ logger = get_logger(__name__, loglevel=const.VLAB_ECS_LOG_LEVEL)
 
 
 class EcsView(TaskView):
-    """API end point TODO"""
+    """API end point manage ECS instances"""
     route_base = '/api/1/inf/ecs'
     POST_SCHEMA = { "$schema": "http://json-schema.org/draft-04/schema#",
                     "type": "object",
@@ -57,7 +57,7 @@ class EcsView(TaskView):
                     }
 
 
-    @requires(verify=False, version=(1,2))
+    @requires(verify=const.VLAB_VERIFY_TOKEN, version=(1,2))
     @describe(post=POST_SCHEMA, delete=DELETE_SCHEMA, get=GET_SCHEMA)
     def get(self, *args, **kwargs):
         """Display the Ecs instances you own"""
@@ -70,7 +70,7 @@ class EcsView(TaskView):
         resp.headers.add('Link', '<{0}{1}/task/{2}>; rel=status'.format(const.VLAB_URL, self.route_base, task.id))
         return resp
 
-    @requires(verify=False, version=(1,2)) # XXX remove verify=False before commit
+    @requires(verify=const.VLAB_VERIFY_TOKEN, version=(1,2))
     @validate_input(schema=POST_SCHEMA)
     def post(self, *args, **kwargs):
         """Create a Ecs"""
@@ -87,7 +87,7 @@ class EcsView(TaskView):
         resp.headers.add('Link', '<{0}{1}/task/{2}>; rel=status'.format(const.VLAB_URL, self.route_base, task.id))
         return resp
 
-    @requires(verify=False, version=(1,2)) # XXX remove verify=False before commit
+    @requires(verify=const.VLAB_VERIFY_TOKEN, version=(1,2))
     @validate_input(schema=DELETE_SCHEMA)
     def delete(self, *args, **kwargs):
         """Destroy a Ecs"""
@@ -102,7 +102,7 @@ class EcsView(TaskView):
         return resp
 
     @route('/image', methods=["GET"])
-    @requires(verify=False, version=(1,2))
+    @requires(verify=const.VLAB_VERIFY_TOKEN, version=(1,2))
     @describe(get=IMAGES_SCHEMA)
     def image(self, *args, **kwargs):
         """Show available versions of Ecs that can be deployed"""
