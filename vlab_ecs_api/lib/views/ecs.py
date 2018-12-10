@@ -60,10 +60,11 @@ class EcsView(TaskView):
     @requires(verify=const.VLAB_VERIFY_TOKEN, version=2)
     @describe(post=POST_SCHEMA, delete=DELETE_SCHEMA, get=GET_SCHEMA)
     def get(self, *args, **kwargs):
-        """Display the Ecs instances you own"""
+        """Display the ECS instances you own"""
         username = kwargs['token']['username']
+        txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
-        task = current_app.celery_app.send_task('ecs.show', [username])
+        task = current_app.celery_app.send_task('ecs.show', [username, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
@@ -73,14 +74,15 @@ class EcsView(TaskView):
     @requires(verify=const.VLAB_VERIFY_TOKEN, version=2)
     @validate_input(schema=POST_SCHEMA)
     def post(self, *args, **kwargs):
-        """Create a Ecs"""
+        """Create an ECS instance"""
         username = kwargs['token']['username']
+        txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
         body = kwargs['body']
         machine_name = body['name']
         image = body['image']
         network = body['network']
-        task = current_app.celery_app.send_task('ecs.create', [username, machine_name, image, network])
+        task = current_app.celery_app.send_task('ecs.create', [username, machine_name, image, network, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
@@ -90,11 +92,12 @@ class EcsView(TaskView):
     @requires(verify=const.VLAB_VERIFY_TOKEN, version=2)
     @validate_input(schema=DELETE_SCHEMA)
     def delete(self, *args, **kwargs):
-        """Destroy a Ecs"""
+        """Destroy an ECS instance"""
         username = kwargs['token']['username']
+        txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
         machine_name = kwargs['body']['name']
-        task = current_app.celery_app.send_task('ecs.delete', [username, machine_name])
+        task = current_app.celery_app.send_task('ecs.delete', [username, machine_name, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
@@ -107,8 +110,9 @@ class EcsView(TaskView):
     def image(self, *args, **kwargs):
         """Show available versions of Ecs that can be deployed"""
         username = kwargs['token']['username']
+        txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
-        task = current_app.celery_app.send_task('ecs.image')
+        task = current_app.celery_app.send_task('ecs.image', [txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
