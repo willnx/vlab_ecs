@@ -21,18 +21,18 @@ class TestVMware(unittest.TestCase):
         fake_folder = MagicMock()
         fake_folder.childEntity = [fake_vm]
         fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
-        fake_get_info.return_value = {'component': 'Ecs',
+        fake_get_info.return_value = {'meta' : {'component': 'Ecs',
+                                                'created': 1234,
+                                                'version': '1.12',
+                                                'configured': False,
+                                                'generation': 1}}
+
+        output = vmware.show_ecs(username='alice')
+        expected = {'Ecs': {'meta' : {'component': 'Ecs',
                                       'created': 1234,
                                       'version': '1.12',
                                       'configured': False,
-                                      'generation': 1}
-
-        output = vmware.show_ecs(username='alice')
-        expected = {'Ecs': {'component': 'Ecs',
-                            'created': 1234,
-                            'version': '1.12',
-                            'configured': False,
-                            'generation': 1}}
+                                      'generation': 1}}}
 
         self.assertEqual(output, expected)
 
@@ -48,11 +48,11 @@ class TestVMware(unittest.TestCase):
         fake_folder = MagicMock()
         fake_folder.childEntity = [fake_vm]
         fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
-        fake_get_info.return_value = {'component': 'Ecs',
-                                      'created': 1234,
-                                      'version': '1.12',
-                                      'configured': False,
-                                      'generation': 1}
+        fake_get_info.return_value = {'meta' : {'component': 'Ecs',
+                                                'created': 1234,
+                                                'version': '1.12',
+                                                'configured': False,
+                                                'generation': 1}}
 
         output = vmware.delete_ecs(username='bob', machine_name='EcsBox', logger=fake_logger)
         expected = None
