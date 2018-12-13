@@ -62,7 +62,7 @@ def create(self, username, machine_name, image, network, txn_id):
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     try:
-        resp['content'] = vmware.create_ecs(username, machine_name, image, network)
+        resp['content'] = vmware.create_ecs(username, machine_name, image, network, logger)
     except ValueError as doh:
         logger.error('Task failed: {}'.format(doh))
         resp['error'] = '{}'.format(doh)
@@ -89,7 +89,7 @@ def delete(self, username, machine_name, txn_id):
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     try:
-        vmware.delete_ecs(username, machine_name)
+        vmware.delete_ecs(username, machine_name, logger)
     except ValueError as doh:
         logger.error('Task failed: {}'.format(doh))
         resp['error'] = '{}'.format(doh)
