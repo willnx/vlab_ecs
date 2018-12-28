@@ -105,7 +105,7 @@ def create_ecs(username, machine_name, image, network, logger):
                      'generation': 1,
                     }
         virtual_machine.set_meta(the_vm, meta_data)
-        info = virtual_machine.get_info(vcenter, the_vm)
+        info = virtual_machine.get_info(vcenter, the_vm, ensure_ip=True)
         return {the_vm.name: info}
 
 
