@@ -7,4 +7,4 @@ RUN apk del gcc
 
 WORKDIR /usr/lib/python3.6/site-packages/vlab_ecs_api/lib/worker
 USER nobody
-CMD ["celery", "-A", "tasks", "worker"]
+CMD ["celery", "-A", "tasks", "worker", "--time-limit", "1800"]
