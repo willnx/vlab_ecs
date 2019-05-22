@@ -76,13 +76,14 @@ class TestVMware(unittest.TestCase):
         with self.assertRaises(ValueError):
             vmware.delete_ecs(username='bob', machine_name='myOtherEcsBox', logger=fake_logger)
 
+    @patch.object(vmware.virtual_machine, 'adjust_ram')
     @patch.object(vmware.virtual_machine, 'set_meta')
     @patch.object(vmware, 'Ova')
     @patch.object(vmware.virtual_machine, 'get_info')
     @patch.object(vmware.virtual_machine, 'deploy_from_ova')
     @patch.object(vmware, 'consume_task')
     @patch.object(vmware, 'vCenter')
-    def test_create_ecs(self, fake_vCenter, fake_consume_task, fake_deploy_from_ova, fake_get_info, fake_Ova, fake_set_meta):
+    def test_create_ecs(self, fake_vCenter, fake_consume_task, fake_deploy_from_ova, fake_get_info, fake_Ova, fake_set_meta, fake_adjust_ram):
         """``create_ecs`` returns a dictionary upon success"""
         fake_logger = MagicMock()
         fake_deploy_from_ova.return_value.name = 'EcsBox'
@@ -98,6 +99,32 @@ class TestVMware(unittest.TestCase):
         expected = {'EcsBox' : {'worked': True}}
 
         self.assertEqual(output, expected)
+
+    @patch.object(vmware.virtual_machine, 'adjust_ram')
+    @patch.object(vmware.virtual_machine, 'set_meta')
+    @patch.object(vmware, 'Ova')
+    @patch.object(vmware.virtual_machine, 'get_info')
+    @patch.object(vmware.virtual_machine, 'deploy_from_ova')
+    @patch.object(vmware, 'consume_task')
+    @patch.object(vmware, 'vCenter')
+    def test_create_ecs_ram(self, fake_vCenter, fake_consume_task, fake_deploy_from_ova, fake_get_info, fake_Ova, fake_set_meta, fake_adjust_ram):
+        """``create_ecs`` Sets the RAM of the new VM to 16GB"""
+        fake_logger = MagicMock()
+        fake_deploy_from_ova.return_value.name = 'EcsBox'
+        fake_get_info.return_value = {'worked': True}
+        fake_Ova.return_value.networks = ['someLAN']
+        fake_vCenter.return_value.__enter__.return_value.networks = {'someLAN' : vmware.vim.Network(moId='1')}
+
+        vmware.create_ecs(username='alice',
+                          machine_name='EcsBox',
+                          image='1.0.0',
+                          network='someLAN',
+                          logger=fake_logger)
+        _, the_kwargs = fake_adjust_ram.call_args
+        ram_value = the_kwargs['mb_of_ram']
+        expected_ram = 16384
+
+        self.assertEqual(ram_value, expected_ram)
 
     @patch.object(vmware, 'Ova')
     @patch.object(vmware.virtual_machine, 'get_info')

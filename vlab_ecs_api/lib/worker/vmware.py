@@ -94,10 +94,18 @@ def create_ecs(username, machine_name, image, network, logger):
                 network_map.network = vcenter.networks[network]
             except KeyError:
                 raise ValueError('No such network named {}'.format(network))
-            the_vm = virtual_machine.deploy_from_ova(vcenter, ova, [network_map],
-                                                     username, machine_name, logger)
+            the_vm = virtual_machine.deploy_from_ova(vcenter=vcenter,
+                                                     ova=ova,
+                                                     network_map=[network_map],
+                                                     username=username,
+                                                     machine_name=machine_name,
+                                                     logger=logger,
+                                                     power_on=False)
         finally:
             ova.close()
+        # 16GB - https://github.com/EMCECS/ECS-CommunityEdition#quick-start-guide
+        virtual_machine.adjust_ram(the_vm, mb_of_ram=16384)
+        virtual_machine.power(the_vm, state='on')
         meta_data = {'component' : "Ecs",
                      'created': time.time(),
                      'version': image,
