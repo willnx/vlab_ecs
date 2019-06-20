@@ -5,7 +5,7 @@ Defines the RESTful API for the ECS service
 import ujson
 from flask import current_app
 from flask_classy import request, route, Response
-from vlab_inf_common.views import TaskView
+from vlab_inf_common.views import MachineView
 from vlab_inf_common.vmware import vCenter, vim
 from vlab_api_common import describe, get_logger, requires, validate_input
 
@@ -16,9 +16,10 @@ from vlab_ecs_api.lib import const
 logger = get_logger(__name__, loglevel=const.VLAB_ECS_LOG_LEVEL)
 
 
-class EcsView(TaskView):
+class EcsView(MachineView):
     """API end point manage ECS instances"""
     route_base = '/api/1/inf/ecs'
+    RESOURCE = 'ecs'
     POST_SCHEMA = { "$schema": "http://json-schema.org/draft-04/schema#",
                     "type": "object",
                     "description": "Create a ecs",

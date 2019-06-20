@@ -89,6 +89,30 @@ class TestTasks(unittest.TestCase):
 
         self.assertEqual(output, expected)
 
+    @patch.object(tasks, 'vmware')
+    def test_modify_network(self, fake_vmware):
+        """``modify_network`` returns an empty content dictionary upon success"""
+        output = tasks.modify_network(username='pat',
+                                      machine_name='myEcs',
+                                      new_network='wootTown',
+                                      txn_id='someTransactionID')
+        expected = {'content': {}, 'error': None, 'params': {}}
+
+        self.assertEqual(output, expected)
+
+    @patch.object(tasks, 'vmware')
+    def test_modify_network_error(self, fake_vmware):
+        """``modify_network`` Catches ValueError, and sets the response accordingly"""
+        fake_vmware.update_network.side_effect = ValueError('some bad input')
+
+        output = tasks.modify_network(username='pat',
+                                      machine_name='myEcs',
+                                      new_network='wootTown',
+                                      txn_id='someTransactionID')
+
+        expected = {'content': {}, 'error': 'some bad input', 'params': {}}
+
+        self.assertEqual(output, expected)
 
 if __name__ == '__main__':
     unittest.main()

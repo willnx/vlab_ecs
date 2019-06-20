@@ -143,3 +143,37 @@ def convert_name(name, to_version=False):
         return name.split('-')[-1].replace('.ova', '')
     else:
         return 'ECS-{}.ova'.format(name)
+
+
+def update_network(username, machine_name, new_network):
+    """Implements the VM network update
+
+    :param username: The name of the user who owns the virtual machine
+    :type username: String
+
+    :param machine_name: The name of the virtual machine
+    :type machine_name: String
+
+    :param new_network: The name of the new network to connect the VM to
+    :type new_network: String
+    """
+    with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
+                 password=const.INF_VCENTER_PASSWORD) as vcenter:
+        folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
+        for entity in folder.childEntity:
+            if entity.name == machine_name:
+                info = virtual_machine.get_info(vcenter, entity)
+                if info['meta']['component'] == 'Ecs':
+                    the_vm = entity
+                    break
+        else:
+            error = 'No VM named {} found'.format(machine_name)
+            raise ValueError(error)
+
+        try:
+            network = vcenter.networks[new_network]
+        except KeyError:
+            error = 'No VM named {} found'.format(machine_name)
+            raise ValueError(error)
+        else:
+            virtual_machine.change_network(the_vm, network)
