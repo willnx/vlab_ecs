@@ -113,3 +113,18 @@ def image(self, txn_id):
     resp['content'] = {'image': vmware.list_images()}
     logger.info('Task complete')
     return resp
+
+
+@app.task(name='ecs.modify_network', bind=True)
+def modify_network(self, username, machine_name, new_network, txn_id):
+    """Change the network an InsightIQ instance is connected to"""
+    logger = get_task_logger(txn_id=txn_id, task_id=self.request.id, loglevel=const.VLAB_ECS_LOG_LEVEL.upper())
+    resp = {'content' : {}, 'error': None, 'params': {}}
+    logger.info('Task starting')
+    try:
+        vmware.update_network(username, machine_name, new_network)
+    except ValueError as doh:
+        logger.error('Task failed: {}'.format(doh))
+        resp['error'] = '{}'.format(doh)
+    logger.info('Task complete')
+    return resp
