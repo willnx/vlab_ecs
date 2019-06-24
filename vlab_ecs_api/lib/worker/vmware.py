@@ -21,7 +21,7 @@ def show_ecs(username):
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
         folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
         for vm in folder.childEntity:
-            info = virtual_machine.get_info(vcenter, vm)
+            info = virtual_machine.get_info(vcenter, vm, username)
             if info['meta']['component'] == 'Ecs':
                 ecs_vms[vm.name] = info
     return ecs_vms
@@ -46,7 +46,7 @@ def delete_ecs(username, machine_name, logger):
         folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
         for entity in folder.childEntity:
             if entity.name == machine_name:
-                info = virtual_machine.get_info(vcenter, entity)
+                info = virtual_machine.get_info(vcenter, entity, username)
                 if info['meta']['component'] == 'Ecs':
                     logger.debug('powering off VM')
                     virtual_machine.power(entity, state='off')
@@ -113,7 +113,7 @@ def create_ecs(username, machine_name, image, network, logger):
                      'generation': 1,
                     }
         virtual_machine.set_meta(the_vm, meta_data)
-        info = virtual_machine.get_info(vcenter, the_vm, ensure_ip=True)
+        info = virtual_machine.get_info(vcenter, the_vm, username, ensure_ip=True)
         return {the_vm.name: info}
 
 
@@ -162,7 +162,7 @@ def update_network(username, machine_name, new_network):
         folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
         for entity in folder.childEntity:
             if entity.name == machine_name:
-                info = virtual_machine.get_info(vcenter, entity)
+                info = virtual_machine.get_info(vcenter, entity, username)
                 if info['meta']['component'] == 'Ecs':
                     the_vm = entity
                     break
