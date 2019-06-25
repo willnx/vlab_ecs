@@ -34,9 +34,19 @@ class TestEcsView(unittest.TestCase):
         cls.fake_task.id = 'asdf-asdf-asdf'
         app.celery_app.send_task.return_value = cls.fake_task
 
-    def test_get_task(self):
-        """EcsView - GET on /api/1/inf/ecs returns a task-id"""
+    def test_v1_deprecated(self):
+        """EcsView - GET on /api/1/inf/ecs returns an HTTP 404"""
         resp = self.app.get('/api/1/inf/ecs',
+                            headers={'X-Auth': self.token})
+
+        status = resp.status_code
+        expected = 404
+
+        self.assertEqual(status, expected)
+
+    def test_get_task(self):
+        """EcsView - GET on /api/2/inf/ecs returns a task-id"""
+        resp = self.app.get('/api/2/inf/ecs',
                             headers={'X-Auth': self.token})
 
         task_id = resp.json['content']['task-id']
@@ -45,18 +55,18 @@ class TestEcsView(unittest.TestCase):
         self.assertEqual(task_id, expected)
 
     def test_get_task_link(self):
-        """EcsView - GET on /api/1/inf/ecs sets the Link header"""
-        resp = self.app.get('/api/1/inf/ecs',
+        """EcsView - GET on /api/2/inf/ecs sets the Link header"""
+        resp = self.app.get('/api/2/inf/ecs',
                             headers={'X-Auth': self.token})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/1/inf/ecs/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/ecs/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
     def test_post_task(self):
-        """EcsView - POST on /api/1/inf/ecs returns a task-id"""
-        resp = self.app.post('/api/1/inf/ecs',
+        """EcsView - POST on /api/2/inf/ecs returns a task-id"""
+        resp = self.app.post('/api/2/inf/ecs',
                              headers={'X-Auth': self.token},
                              json={'network': "someLAN",
                                    'name': "myEcsBox",
@@ -68,21 +78,21 @@ class TestEcsView(unittest.TestCase):
         self.assertEqual(task_id, expected)
 
     def test_post_task_link(self):
-        """EcsView - POST on /api/1/inf/ecs sets the Link header"""
-        resp = self.app.post('/api/1/inf/ecs',
+        """EcsView - POST on /api/2/inf/ecs sets the Link header"""
+        resp = self.app.post('/api/2/inf/ecs',
                              headers={'X-Auth': self.token},
                              json={'network': "someLAN",
                                    'name': "myEcsBox",
                                    'image': "someVersion"})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/1/inf/ecs/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/ecs/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
     def test_delete_task(self):
-        """EcsView - DELETE on /api/1/inf/ecs returns a task-id"""
-        resp = self.app.delete('/api/1/inf/ecs',
+        """EcsView - DELETE on /api/2/inf/ecs returns a task-id"""
+        resp = self.app.delete('/api/2/inf/ecs',
                                headers={'X-Auth': self.token},
                                json={'name' : 'myEcsBox'})
 
@@ -92,19 +102,19 @@ class TestEcsView(unittest.TestCase):
         self.assertEqual(task_id, expected)
 
     def test_delete_task_link(self):
-        """EcsView - DELETE on /api/1/inf/ecs sets the Link header"""
-        resp = self.app.delete('/api/1/inf/ecs',
+        """EcsView - DELETE on /api/2/inf/ecs sets the Link header"""
+        resp = self.app.delete('/api/2/inf/ecs',
                                headers={'X-Auth': self.token},
                                json={'name' : 'myEcsBox'})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/1/inf/ecs/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/ecs/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
     def test_image(self):
         """EcsView - GET on the ./image end point returns the a task-id"""
-        resp = self.app.get('/api/1/inf/ecs/image',
+        resp = self.app.get('/api/2/inf/ecs/image',
                             headers={'X-Auth': self.token})
 
         task_id = resp.json['content']['task-id']
@@ -114,11 +124,11 @@ class TestEcsView(unittest.TestCase):
 
     def test_image(self):
         """EcsView - GET on the ./image end point sets the Link header"""
-        resp = self.app.get('/api/1/inf/ecs/image',
+        resp = self.app.get('/api/2/inf/ecs/image',
                             headers={'X-Auth': self.token})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/1/inf/ecs/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/ecs/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 

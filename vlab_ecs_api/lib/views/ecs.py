@@ -18,7 +18,7 @@ logger = get_logger(__name__, loglevel=const.VLAB_ECS_LOG_LEVEL)
 
 class EcsView(MachineView):
     """API end point manage ECS instances"""
-    route_base = '/api/1/inf/ecs'
+    route_base = '/api/2/inf/ecs'
     RESOURCE = 'ecs'
     POST_SCHEMA = { "$schema": "http://json-schema.org/draft-04/schema#",
                     "type": "object",
@@ -82,7 +82,7 @@ class EcsView(MachineView):
         body = kwargs['body']
         machine_name = body['name']
         image = body['image']
-        network = body['network']
+        network = '{}_{}'.format(username, body['network'])
         task = current_app.celery_app.send_task('ecs.create', [username, machine_name, image, network, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
