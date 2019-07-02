@@ -42,10 +42,20 @@ class TestEcsViewSchema(unittest.TestCase):
 
         self.assertTrue(schema_valid)
 
-    def test_iamges_schema(self):
+    def test_images_schema(self):
         """The schema defined for GET on /images is valid"""
         try:
             Draft4Validator.check_schema(ecs.EcsView.IMAGES_SCHEMA)
+            schema_valid = True
+        except RuntimeError:
+            schema_valid = False
+
+        self.assertTrue(schema_valid)
+
+    def test_config_schema(self):
+        """The schema defined for POST on /config is valid"""
+        try:
+            Draft4Validator.check_schema(ecs.EcsView.CONFIG_SCHEMA)
             schema_valid = True
         except RuntimeError:
             schema_valid = False

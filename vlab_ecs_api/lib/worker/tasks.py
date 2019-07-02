@@ -6,7 +6,7 @@ from celery import Celery
 from vlab_api_common import get_task_logger
 
 from vlab_ecs_api.lib import const
-from vlab_ecs_api.lib.worker import vmware
+from vlab_ecs_api.lib.worker import vmware, setup_ecs
 
 app = Celery('ecs', backend='rpc://', broker=const.VLAB_MESSAGE_BROKER)
 
@@ -126,5 +126,28 @@ def modify_network(self, username, machine_name, new_network, txn_id):
     except ValueError as doh:
         logger.error('Task failed: {}'.format(doh))
         resp['error'] = '{}'.format(doh)
+    logger.info('Task complete')
+    return resp
+
+
+@app.task(name='ecs.config', bind=True)
+def config(self, username, machine_name, ssh_port, gateway_ip, ecs_ip, txn_id):
+    """Turn the ECS instance into a 'ready to use thing'"""
+    logger = get_task_logger(txn_id=txn_id, task_id=self.request.id, loglevel=const.VLAB_ECS_LOG_LEVEL.upper())
+    resp = {'content' : {}, 'error': None, 'params': {}}
+    logger.info('Task starting')
+    try:
+        the_vm = vmware.show_ecs(username)[machine_name]
+        if not the_vm['meta']['configured']:
+            setup_ecs.configure(ssh_port, gateway_ip, ecs_ip, logger)
+            the_vm['meta']['configured'] = True
+            vmware.set_meta(username, machine_name, the_vm['meta'])
+        else:
+            resp['error'] = 'Unable to configure an already configured ECS instance'
+    except (ValueError, RuntimeError) as doh:
+        logger.error('Task failed: {}'.format(doh))
+        resp['error'] = '{}'.format(doh)
+    except KeyError:
+        resp['error'] = 'No such ECS instanced named {} found'.format(machine_name)
     logger.info('Task complete')
     return resp

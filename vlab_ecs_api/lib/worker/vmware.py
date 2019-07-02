@@ -177,3 +177,25 @@ def update_network(username, machine_name, new_network):
             raise ValueError(error)
         else:
             virtual_machine.change_network(the_vm, network)
+
+
+def set_meta(username, machine_name, meta_data):
+    """Connect to vCenter and update the VMs meta data
+
+    :Returns: None
+
+    :param username: The name of the user who owns the virtual machine
+    :type username: String
+
+    :param machine_name: The name of the virtual machine
+    :type machine_name: String
+
+    :param meta_data: The key-value meta-data object to apply to the VM.
+    :type meta_data: Dictionary
+    """
+    with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
+                 password=const.INF_VCENTER_PASSWORD) as vcenter:
+        folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
+        for vm in folder.childEntity:
+            if vm.name == machine_name:
+                virtual_machine.set_meta(vm, meta_data)

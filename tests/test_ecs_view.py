@@ -132,6 +132,34 @@ class TestEcsView(unittest.TestCase):
 
         self.assertEqual(task_id, expected)
 
+    def test_post_config_task(self):
+        """EcsView - POST on /api/2/inf/ecs/config returns a task-id"""
+        resp = self.app.post('/api/2/inf/ecs/config',
+                             headers={'X-Auth': self.token},
+                             json={'name': "myEcsBox",
+                                   'ssh_port': 9001,
+                                   'gateway_ip': '10.1.1.1',
+                                   'ecs_ip': '192.168.1.32'})
+
+        task_id = resp.json['content']['task-id']
+        expected = 'asdf-asdf-asdf'
+
+        self.assertEqual(task_id, expected)
+
+    def test_post_task_config_link(self):
+        """EcsView - POST on /api/2/inf/ecs/config sets the Link header"""
+        resp = self.app.post('/api/2/inf/ecs/config',
+                             headers={'X-Auth': self.token},
+                             json={'name': "myEcsBox",
+                                   'ssh_port': 9001,
+                                   'gateway_ip': '10.1.1.1',
+                                   'ecs_ip': '192.168.1.32'})
+
+        task_id = resp.headers['Link']
+        expected = '<https://localhost/api/2/inf/ecs/task/asdf-asdf-asdf>; rel=status'
+
+        self.assertEqual(task_id, expected)
+
 
 if __name__ == '__main__':
     unittest.main()

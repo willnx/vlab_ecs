@@ -24,6 +24,8 @@ DEFINED = OrderedDict([
             ('VLAB_URL', environ.get('VLAB_URL', 'https://localhost')),
             ('VLAB_ECS_IMAGES_DIR', environ.get('VLAB_ECS_IMAGES_DIR', '/images')),
             ('VLAB_VERIFY_TOKEN', environ.get('VLAB_VERIFY_TOKEN', False)),
+            ('VLAB_ECS_ADMIN', environ.get('VLAB_ECS_ADMIN', 'admin')),
+            ('VLAB_ECS_ADMIN_PW', environ.get('VLAB_ECS_ADMIN_PW', 'ChangeMe')),
           ])
 
 Constants = namedtuple('Constants', list(DEFINED.keys()))
