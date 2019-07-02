@@ -250,6 +250,26 @@ class TestVMware(unittest.TestCase):
                                   machine_name='myEcs',
                                   new_network='dohNet')
 
+    @patch.object(vmware.virtual_machine, 'set_meta')
+    @patch.object(vmware, 'vCenter')
+    def test_set_meta(self, fake_vCenter, fake_set_meta):
+        """``set_meta`` Connects to vCenter and updates the VMs meta-data"""
+        fake_vm = MagicMock()
+        fake_vm.name = 'Ecs'
+        fake_folder = MagicMock()
+        fake_folder.childEntity = [fake_vm]
+        fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
+        fake_meta_data = {'some_data': True}
+
+        vmware.set_meta('alice', fake_vm.name, fake_meta_data)
+
+        the_args, _ = fake_set_meta.call_args
+        sent_vm = the_args[0]
+        sent_data = the_args[1]
+
+        self.assertTrue(fake_vm is sent_vm)
+        self.assertTrue(fake_meta_data is sent_data)
+
 
 if __name__ == '__main__':
     unittest.main()

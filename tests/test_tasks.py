@@ -78,7 +78,6 @@ class TestTasks(unittest.TestCase):
 
         self.assertEqual(output, expected)
 
-
     @patch.object(tasks, 'vmware')
     def test_image(self, fake_vmware):
         """``image`` returns a dictionary when everything works as expected"""
@@ -113,6 +112,120 @@ class TestTasks(unittest.TestCase):
         expected = {'content': {}, 'error': 'some bad input', 'params': {}}
 
         self.assertEqual(output, expected)
+
+    @patch.object(tasks, 'vmware')
+    @patch.object(tasks, 'setup_ecs')
+    def test_config_ok(self, fake_setup_ecs, fake_vmware):
+        """``config`` returns a dictionary when everything works as expected"""
+        fake_vmware.show_ecs.return_value = {'myECSbox' : {'meta': {'configured' : False}}}
+
+        output = tasks.config(username='alice',
+                              machine_name='myECSbox',
+                              ssh_port=50022,
+                              gateway_ip='10.8.6.1',
+                              ecs_ip='192.168.1.65',
+                              txn_id='aabbcc')
+        expected = {'content': {}, 'error': None, 'params': {}}
+
+        self.assertEqual(output, expected)
+
+    @patch.object(tasks, 'vmware')
+    @patch.object(tasks, 'setup_ecs')
+    def test_config_meta(self, fake_setup_ecs, fake_vmware):
+        """``config`` updates the VM meta data upon success"""
+        fake_vmware.show_ecs.return_value = {'myECSbox' : {'meta': {'configured' : False}}}
+
+        tasks.config(username='alice',
+                     machine_name='myECSbox',
+                     ssh_port=50022,
+                     gateway_ip='10.8.6.1',
+                     ecs_ip='192.168.1.65',
+                     txn_id='aabbcc')
+
+        self.assertTrue(fake_vmware.set_meta.called)
+
+    @patch.object(tasks, 'vmware')
+    @patch.object(tasks, 'setup_ecs')
+    def test_config_already_config(self, fake_setup_ecs, fake_vmware):
+        """``config`` does not attempt to configure an already configured ECS instance"""
+        fake_vmware.show_ecs.return_value = {'myECSbox' : {'meta': {'configured' : True}}}
+
+        tasks.config(username='alice',
+                     machine_name='myECSbox',
+                     ssh_port=50022,
+                     gateway_ip='10.8.6.1',
+                     ecs_ip='192.168.1.65',
+                     txn_id='aabbcc')
+
+        self.assertFalse(fake_setup_ecs.configure.called)
+
+    @patch.object(tasks, 'vmware')
+    @patch.object(tasks, 'setup_ecs')
+    def test_config_already_config_error(self, fake_setup_ecs, fake_vmware):
+        """``config``  Returns an error message if the ECS instance is already configured"""
+        fake_vmware.show_ecs.return_value = {'myECSbox' : {'meta': {'configured' : True}}}
+
+        output = tasks.config(username='alice',
+                              machine_name='myECSbox',
+                              ssh_port=50022,
+                              gateway_ip='10.8.6.1',
+                              ecs_ip='192.168.1.65',
+                              txn_id='aabbcc')
+        expected = {'content': {}, 'error': 'Unable to configure an already configured ECS instance', 'params': {}}
+
+        self.assertFalse(fake_setup_ecs.configure.called)
+
+
+    @patch.object(tasks, 'vmware')
+    @patch.object(tasks, 'setup_ecs')
+    def test_config_value_error(self, fake_setup_ecs, fake_vmware):
+        """``config`` returns an error message upon catching a ValueError"""
+        fake_vmware.show_ecs.side_effect = ValueError('testing')
+
+        output = tasks.config(username='alice',
+                              machine_name='myECSbox',
+                              ssh_port=50022,
+                              gateway_ip='10.8.6.1',
+                              ecs_ip='192.168.1.65',
+                              txn_id='aabbcc')
+
+        expected = {'content': {}, 'error': 'testing', 'params': {}}
+
+        self.assertFalse(fake_setup_ecs.configure.called)
+
+    @patch.object(tasks, 'vmware')
+    @patch.object(tasks, 'setup_ecs')
+    def test_config_runtime_error(self, fake_setup_ecs, fake_vmware):
+        """``config`` returns an error message upon catching a RuntimeError"""
+        fake_vmware.show_ecs.side_effect = RuntimeError('testing')
+
+        output = tasks.config(username='alice',
+                              machine_name='myECSbox',
+                              ssh_port=50022,
+                              gateway_ip='10.8.6.1',
+                              ecs_ip='192.168.1.65',
+                              txn_id='aabbcc')
+
+        expected = {'content': {}, 'error': 'testing', 'params': {}}
+
+        self.assertFalse(fake_setup_ecs.configure.called)
+
+    @patch.object(tasks, 'vmware')
+    @patch.object(tasks, 'setup_ecs')
+    def test_config_ok(self, fake_setup_ecs, fake_vmware):
+        """``config`` returns a dictionary when everything works as expected"""
+        fake_vmware.show_ecs.return_value = {'myECSbox' : {'meta': {'configured' : False}}}
+
+        output = tasks.config(username='alice',
+                              machine_name='someOtherBox',
+                              ssh_port=50022,
+                              gateway_ip='10.8.6.1',
+                              ecs_ip='192.168.1.65',
+                              txn_id='aabbcc')
+        expected = {'content': {}, 'error': 'No such ECS instanced named someOtherBox found', 'params': {}}
+
+        self.assertEqual(output, expected)
+
 
 if __name__ == '__main__':
     unittest.main()

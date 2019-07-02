@@ -56,7 +56,29 @@ class EcsView(MachineView):
     IMAGES_SCHEMA = {"$schema": "http://json-schema.org/draft-04/schema#",
                      "description": "View available versions of Ecs that can be created"
                     }
-
+    CONFIG_SCHEMA = {"$schema": "http://json-schema.org/draft-04/schema#",
+                     "description" : "Configure ECS",
+                     "type": "object",
+                     "properties": {
+                        "name": {
+                            "description": "The name of the ECS instance",
+                            "type": "string"
+                        },
+                        "ssh_port": {
+                            "description": "The SSH port to connect to, because ECS requires a TTY to configure",
+                            "type": "number"
+                        },
+                        "gateway_ip": {
+                            "description" : "The vLab NAT gateway of the user configuring an ECS instance",
+                            "type": "string"
+                        },
+                        "ecs_ip": {
+                            "description": "The IP (inside the NAT) of the ECS instance",
+                            "type": "string"
+                        }
+                     },
+                     "required": ["name", "ssh_port", "gateway_ip", "ecs_ip"]
+                    }
 
     @requires(verify=const.VLAB_VERIFY_TOKEN, version=2)
     @describe(post=POST_SCHEMA, delete=DELETE_SCHEMA, get=GET_SCHEMA)
@@ -114,6 +136,27 @@ class EcsView(MachineView):
         txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
         task = current_app.celery_app.send_task('ecs.image', [txn_id])
+        resp_data['content'] = {'task-id': task.id}
+        resp = Response(ujson.dumps(resp_data))
+        resp.status_code = 202
+        resp.headers.add('Link', '<{0}{1}/task/{2}>; rel=status'.format(const.VLAB_URL, self.route_base, task.id))
+        return resp
+
+    @route('/config', methods=["POST"])
+    @requires(verify=const.VLAB_VERIFY_TOKEN, version=2)
+    @describe(post=CONFIG_SCHEMA)
+    @validate_input(schema=CONFIG_SCHEMA)
+    def config(self, *args, **kwargs):
+        """Configure the ECS instance into a usable thingy"""
+        status_code = 202
+        username = kwargs['token']['username']
+        txn_id = request.headers.get('X-REQUEST-ID', 'noId')
+        ssh_port = kwargs['body']['ssh_port']
+        gateway_ip = kwargs['body']['gateway_ip']
+        ecs_ip = kwargs['body']['ecs_ip']
+        machine_name = kwargs['body']['name']
+        resp_data = {'user' : username}
+        task = current_app.celery_app.send_task('ecs.config', [username, machine_name, ssh_port, gateway_ip, ecs_ip, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
